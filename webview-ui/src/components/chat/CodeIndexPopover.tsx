@@ -278,12 +278,27 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 	// Update indexing status from parent
 	useEffect(() => {
 		setIndexingStatus(externalIndexingStatus)
-		// kilocode_change start: Stop loading animation when status changes from Standby
-		if (externalIndexingStatus.systemStatus !== "Standby" && isStartingIndexing) {
+	// kilocode_change start: Stop loading animation when status changes from Standby or Error
+	if (
+		(externalIndexingStatus.systemStatus !== "Standby" && isStartingIndexing) ||
+		(externalIndexingStatus.systemStatus === "Error" && isStartingIndexing)
+	) {
+		setIsStartingIndexing(false)
+	}
+	// kilocode_change end
+}, [externalIndexingStatus, isStartingIndexing])
+
+	// kilocode_change start: Timeout failsafe for loading state
+	useEffect(() => {
+		if (!isStartingIndexing) return
+
+		const timeout = setTimeout(() => {
 			setIsStartingIndexing(false)
-		}
-		// kilocode_change end
-	}, [externalIndexingStatus, isStartingIndexing])
+		}, 10000) // 10 second timeout - prevents indefinite loading while providing quick error feedback
+
+		return () => clearTimeout(timeout)
+	}, [isStartingIndexing])
+	// kilocode_change end
 
 	// kilocode_change start: Animate dots while starting indexing
 	useEffect(() => {
@@ -302,6 +317,14 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 
 		return () => clearInterval(interval)
 	}, [isStartingIndexing])
+	// kilocode_change end
+
+	// kilocode_change start: Cleanup loading state on unmount
+	useEffect(() => {
+		return () => {
+			setIsStartingIndexing(false)
+		}
+	}, [])
 	// kilocode_change end
 
 	// Initialize settings from global state
@@ -800,24 +823,6 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 								</StandardTooltip>
 							</div>
 						</div>
-
-						{/* kilocode_change start: Start Indexing Button */}
-						{currentSettings.codebaseIndexEnabled &&
-							(indexingStatus.systemStatus === "Error" || indexingStatus.systemStatus === "Standby") && (
-								<div className="mb-4 flex justify-center">
-									<Button
-										onClick={() => {
-											setIsStartingIndexing(true)
-											vscode.postMessage({ type: "startIndexing" })
-										}}
-										disabled={saveStatus === "saving" || hasUnsavedChanges || isStartingIndexing}>
-										{isStartingIndexing
-											? `${t("settings:codeIndex.startIndexingButton")}${loadingDots}`
-											: t("settings:codeIndex.startIndexingButton")}
-									</Button>
-								</div>
-							)}
-						{/* kilocode_change end */}
 
 						{/* Status Section */}
 						<div className="space-y-2">
@@ -1872,9 +1877,25 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 														{t("settings:codeIndex.clearDataDialog.confirmButton")}
 													</AlertDialogAction>
 												</AlertDialogFooter>
-											</AlertDialogContent>
-										</AlertDialog>
+									</AlertDialogContent>
+									</AlertDialog>
+								)}
+
+								{/* kilocode_change start: Start Indexing Button */}
+								{currentSettings.codebaseIndexEnabled &&
+									(indexingStatus.systemStatus === "Error" || indexingStatus.systemStatus === "Standby") && (
+										<Button
+											onClick={() => {
+												setIsStartingIndexing(true)
+												vscode.postMessage({ type: "startIndexing" })
+											}}
+											disabled={saveStatus === "saving" || hasUnsavedChanges || isStartingIndexing}>
+											{isStartingIndexing
+												? `${t("settings:codeIndex.startIndexingButton")}${loadingDots}`
+												: t("settings:codeIndex.startIndexingButton")}
+										</Button>
 									)}
+								{/* kilocode_change end */}
 							</div>
 
 							<Button
