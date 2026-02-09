@@ -283,15 +283,15 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 	// Update indexing status from parent
 	useEffect(() => {
 		setIndexingStatus(externalIndexingStatus)
-	// kilocode_change start: Stop loading animation when status changes from Standby or Error
-	if (
-		(externalIndexingStatus.systemStatus !== "Standby" && isStartingIndexing) ||
-		(externalIndexingStatus.systemStatus === "Error" && isStartingIndexing)
-	) {
-		setIsStartingIndexing(false)
-	}
-	// kilocode_change end
-}, [externalIndexingStatus, isStartingIndexing])
+		// kilocode_change start: Stop loading animation when status changes from Standby or Error
+		if (
+			(externalIndexingStatus.systemStatus !== "Standby" && isStartingIndexing) ||
+			(externalIndexingStatus.systemStatus === "Error" && isStartingIndexing)
+		) {
+			setIsStartingIndexing(false)
+		}
+		// kilocode_change end
+	}, [externalIndexingStatus, isStartingIndexing])
 
 	// kilocode_change start: Timeout failsafe for loading state
 	useEffect(() => {
@@ -710,17 +710,6 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 	// Use the shared ESC key handler hook - respects unsaved changes logic
 	useEscapeKey(open, handlePopoverClose)
 
-	// kilocode_change start
-	const handleCancelIndexing = useCallback(() => {
-		// Optimistically update UI while backend cancels
-		setIndexingStatus((prev) => ({
-			...prev,
-			message: t("settings:codeIndex.cancelling"),
-		}))
-		vscode.postMessage({ type: "cancelIndexing" })
-	}, [t])
-	// kilocode_change end
-
 	const handleToggleWorkspaceIndexing = useCallback(() => {
 		setIsTogglingWorkspaceIndexing(true)
 
@@ -903,9 +892,11 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 									className="flex-1"
 									variant={isWorkspaceIndexingActive ? "secondary" : "primary"}>
 									{isTogglingWorkspaceIndexing
-										? `${isWorkspaceIndexingActive
-											? t("settings:codeIndex.deactivatingIndex")
-											: t("settings:codeIndex.activatingIndex")}${loadingDots}`
+										? `${
+												isWorkspaceIndexingActive
+													? t("settings:codeIndex.deactivatingIndex")
+													: t("settings:codeIndex.activatingIndex")
+											}${loadingDots}`
 										: isWorkspaceIndexingActive
 											? t("settings:codeIndex.deactivateIndexButton")
 											: t("settings:codeIndex.activateIndexButton")}
@@ -934,7 +925,8 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 											<AlertDialogCancel>
 												{t("settings:codeIndex.clearDataDialog.cancelButton")}
 											</AlertDialogCancel>
-											<AlertDialogAction onClick={() => vscode.postMessage({ type: "clearIndexData" })}>
+											<AlertDialogAction
+												onClick={() => vscode.postMessage({ type: "clearIndexData" })}>
 												{t("settings:codeIndex.clearDataDialog.confirmButton")}
 											</AlertDialogAction>
 										</AlertDialogFooter>
@@ -1936,7 +1928,6 @@ export const CodeIndexPopover: React.FC<CodeIndexPopoverProps> = ({
 								</span>
 							</div>
 						)}
-
 					</div>
 
 					{/* Save Button - Fixed at bottom */}
